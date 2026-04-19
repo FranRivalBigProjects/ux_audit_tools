@@ -1,28 +1,922 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ux_score_calculator</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Score Calculator – SUS, NPS, Task Success & Time on Task</title>
+<meta name="description" content="Calculate a composite UX score using industry-standard metrics: SUS (System Usability Scale), NPS, Task Success Rate, and Time on Task efficiency. Get benchmarked results instantly.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0d0f12;
+    --surface:   #13161b;
+    --surface-2: #181c23;
+    --border:    #1f242d;
+    --border-hi: #2e3540;
+    --accent:    #00e5c3;
+    --accent-2:  #5b6af5;
+    --text:      #e4e8ef;
+    --muted:     #6b7585;
+    --warning:   #f0a500;
+    --danger:    #ff5f57;
+    --success:   #00e5c3;
+
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+    --radius:    10px;
+    --radius-lg: 18px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative;
+    z-index: 2;
+    padding: 20px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+  }
+
+  nav a:hover { color: var(--accent); }
+  nav a::before { content: '←'; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 36px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(0,229,195,.07);
+    border: 1px solid rgba(0,229,195,.2);
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 18px;
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+  }
+
+  header h1 em { font-style: italic; color: var(--accent); }
+
+  header p {
+    color: var(--muted);
+    font-size: .95rem;
+    font-weight: 300;
+    max-width: 560px;
+  }
+
+  /* ── TOOL CARD ── */
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin: 36px 0;
+    animation: fadeUp .5s .1s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+
+  /* ── METRIC BLOCKS ── */
+  .metric-block {
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .metric-block:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .metric-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .metric-title-wrap { display: flex; align-items: center; gap: 10px; }
+
+  .metric-icon {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: rgba(0,229,195,.08);
+    border: 1px solid rgba(0,229,195,.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .metric-name {
+    font-size: .9rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .metric-abbr {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--accent);
+    background: rgba(0,229,195,.08);
+    border: 1px solid rgba(0,229,195,.2);
+    border-radius: 4px;
+    padding: 1px 7px;
+  }
+
+  .metric-weight {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 2px 10px;
+    flex-shrink: 0;
+  }
+
+  .metric-desc {
+    font-size: .8rem;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  /* sub-inputs for multi-field metrics */
+  .sub-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .sub-fields.single { grid-template-columns: 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label.sub-label {
+    font-size: .78rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .input-wrap { position: relative; }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 52px 11px 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .9rem;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,195,.1);
+  }
+
+  .input-unit {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .score-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 7px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── BUTTON ── */
+  .btn-run {
+    width: 100%;
+    background: var(--accent);
+    color: #0d0f12;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 28px;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  }
+
+  .btn-run:hover {
+    background: #00ffd6;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,195,.25);
+  }
+
+  .btn-run:active { transform: translateY(0); }
+
+  /* ── RESULT ── */
+  #result { margin-top: 28px; display: none; animation: fadeUp .4s ease both; }
+  #result.visible { display: block; }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  /* big score display */
+  .score-display {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .score-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .score-label {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .score-big {
+    font-family: var(--font-display);
+    font-size: 4rem;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -.03em;
+  }
+
+  .score-big span {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .result-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    padding: 5px 14px;
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+
+  .level-excellent { color: var(--success);  background: rgba(0,229,195,.08);  border: 1px solid rgba(0,229,195,.2); }
+  .level-average   { color: var(--warning);   background: rgba(240,165,0,.08);  border: 1px solid rgba(240,165,0,.2); }
+  .level-poor      { color: var(--danger);    background: rgba(255,95,87,.08);  border: 1px solid rgba(255,95,87,.2); }
+
+  /* metric cards */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .metric-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .mc-label {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mc-value {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .mc-benchmark {
+    font-size: .75rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .mc-badge {
+    display: inline-flex;
+    width: fit-content;
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    font-weight: 500;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-top: 2px;
+  }
+
+  .badge-good    { background: rgba(0,229,195,.12);  color: var(--accent);  }
+  .badge-average { background: rgba(240,165,0,.12);  color: var(--warning); }
+  .badge-poor    { background: rgba(255,95,87,.12);  color: var(--danger);  }
+
+  /* recommendations */
+  .reco-title {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .reco-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .reco-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+  }
+
+  .reco-item.r-improve { border-left-color: var(--warning); }
+  .reco-item.r-fix     { border-left-color: var(--danger); }
+  .reco-item.r-ok      { border-left-color: var(--accent); }
+
+  .reco-icon { flex-shrink: 0; font-size: .85rem; margin-top: 1px; }
+  .reco-text { color: var(--text); line-height: 1.5; }
+
+  .no-recos {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,229,195,.06);
+    border: 1px solid rgba(0,229,195,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: var(--accent);
+  }
+
+  .no-recos::before { content: '✓'; font-weight: 700; }
+
+  /* ── INFO ── */
+  .info-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .2s ease both;
+  }
+
+  .info-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .info-section p {
+    color: var(--muted);
+    font-size: .9rem;
+    font-weight: 300;
+    margin-bottom: 12px;
+    max-width: 600px;
+  }
+
+  .info-section ul { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  .info-section ul li {
+    display: flex;
+    gap: 10px;
+    font-size: .875rem;
+    color: var(--text);
+  }
+
+  .info-section ul li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  footer p { font-size: .8rem; color: var(--muted); font-weight: 300; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 520px) {
+    .tool-card { padding: 20px; }
+    .sub-fields { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: 1fr; }
+    .score-big { font-size: 3rem; }
+  }
+</style>
+
 </head>
 <body>
-<div class="container">
-<h2>Ux Score Calculator</h2>
 
-<label>Usability Score (0-100)</label>
-<input id="a" type="number">
+<nav class="wrapper">
+  <a href="/ux_audit_tools/">UX Audit Tools</a>
+</nav>
 
-<label>Consistency Score (0-100)</label>
-<input id="b" type="number">
+<div class="wrapper">
 
-<label>Accessibility Score (0-100)</label>
-<input id="c" type="number">
+  <header>
+    <div class="badge">UX Metrics</div>
+    <h1>UX Score <em>Calculator</em></h1>
+    <p>Calculate a composite UX score using four industry-standard methodologies: SUS, NPS, Task Success Rate, and Time on Task efficiency.</p>
+  </header>
 
-<button onclick="calc()">Analyze</button>
+  <div class="tool-card">
 
-<div id="result"></div>
+```
+<!-- SUS -->
+<div class="metric-block">
+  <div class="metric-header">
+    <div class="metric-title-wrap">
+      <div class="metric-icon">◎</div>
+      <span class="metric-name">System Usability Scale</span>
+      <span class="metric-abbr">SUS</span>
+    </div>
+    <span class="metric-weight">Weight 35%</span>
+  </div>
+  <p class="metric-desc">
+    SUS is a 10-question Likert scale. Each odd question contributes (score − 1); each even question contributes (5 − score). Sum × 2.5 = SUS score (0–100). Enter your final calculated SUS score.
+  </p>
+  <div class="sub-fields single">
+    <div class="field">
+      <label class="sub-label" for="sus">SUS Score (0–100)</label>
+      <div class="input-wrap">
+        <input id="sus" type="number" min="0" max="100" placeholder="e.g. 72"
+          oninput="liveBar('sus', 'barSus', 0, 100)">
+        <span class="input-unit">/ 100</span>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" id="barSus"></div></div>
+    </div>
+  </div>
 </div>
 
-<script src="script.js"></script>
+<!-- NPS -->
+<div class="metric-block">
+  <div class="metric-header">
+    <div class="metric-title-wrap">
+      <div class="metric-icon">⬡</div>
+      <span class="metric-name">Net Promoter Score</span>
+      <span class="metric-abbr">NPS</span>
+    </div>
+    <span class="metric-weight">Weight 25%</span>
+  </div>
+  <p class="metric-desc">
+    Enter the number of Promoters (scored 9–10), Passives (7–8), and Detractors (0–6) from your survey responses.
+  </p>
+  <div class="sub-fields">
+    <div class="field">
+      <label class="sub-label" for="promoters">Promoters (9–10)</label>
+      <div class="input-wrap">
+        <input id="promoters" type="number" min="0" placeholder="e.g. 45"
+          oninput="calcNpsPreview()">
+        <span class="input-unit">users</span>
+      </div>
+    </div>
+    <div class="field">
+      <label class="sub-label" for="detractors">Detractors (0–6)</label>
+      <div class="input-wrap">
+        <input id="detractors" type="number" min="0" placeholder="e.g. 12"
+          oninput="calcNpsPreview()">
+        <span class="input-unit">users</span>
+      </div>
+    </div>
+    <div class="field">
+      <label class="sub-label" for="total_nps">Total respondents</label>
+      <div class="input-wrap">
+        <input id="total_nps" type="number" min="1" placeholder="e.g. 100"
+          oninput="calcNpsPreview()">
+        <span class="input-unit">total</span>
+      </div>
+    </div>
+    <div class="field">
+      <label class="sub-label">NPS Preview</label>
+      <div class="input-wrap">
+        <input id="nps_preview" type="number" readonly placeholder="—"
+          style="opacity:.6; cursor:default;">
+        <span class="input-unit">pts</span>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" id="barNps"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Success Rate -->
+<div class="metric-block">
+  <div class="metric-header">
+    <div class="metric-title-wrap">
+      <div class="metric-icon">◈</div>
+      <span class="metric-name">Task Success Rate</span>
+      <span class="metric-abbr">TSR</span>
+    </div>
+    <span class="metric-weight">Weight 25%</span>
+  </div>
+  <p class="metric-desc">
+    The percentage of user tests where participants completed the target task without critical errors.
+  </p>
+  <div class="sub-fields">
+    <div class="field">
+      <label class="sub-label" for="tasks_success">Tasks completed successfully</label>
+      <div class="input-wrap">
+        <input id="tasks_success" type="number" min="0" placeholder="e.g. 38"
+          oninput="calcTsrPreview()">
+        <span class="input-unit">tasks</span>
+      </div>
+    </div>
+    <div class="field">
+      <label class="sub-label" for="tasks_total">Total tasks attempted</label>
+      <div class="input-wrap">
+        <input id="tasks_total" type="number" min="1" placeholder="e.g. 50"
+          oninput="calcTsrPreview()">
+        <span class="input-unit">tasks</span>
+      </div>
+    </div>
+  </div>
+  <div class="score-bar" style="margin-top:10px"><div class="score-bar-fill" id="barTsr"></div></div>
+</div>
+
+<!-- Time on Task -->
+<div class="metric-block">
+  <div class="metric-header">
+    <div class="metric-title-wrap">
+      <div class="metric-icon">⊞</div>
+      <span class="metric-name">Time on Task Efficiency</span>
+      <span class="metric-abbr">ToT</span>
+    </div>
+    <span class="metric-weight">Weight 15%</span>
+  </div>
+  <p class="metric-desc">
+    Compare average observed task completion time against your defined target. Score = (target / observed) × 100, capped at 100.
+  </p>
+  <div class="sub-fields">
+    <div class="field">
+      <label class="sub-label" for="time_target">Target time (seconds)</label>
+      <div class="input-wrap">
+        <input id="time_target" type="number" min="1" placeholder="e.g. 60"
+          oninput="calcTotPreview()">
+        <span class="input-unit">sec</span>
+      </div>
+    </div>
+    <div class="field">
+      <label class="sub-label" for="time_observed">Average observed time (seconds)</label>
+      <div class="input-wrap">
+        <input id="time_observed" type="number" min="1" placeholder="e.g. 85"
+          oninput="calcTotPreview()">
+        <span class="input-unit">sec</span>
+      </div>
+    </div>
+  </div>
+  <div class="score-bar" style="margin-top:10px"><div class="score-bar-fill" id="barTot"></div></div>
+</div>
+
+<button class="btn-run" onclick="calc()">Calculate UX Score</button>
+
+<div id="result"></div>
+```
+
+  </div>
+
+  <div class="info-section">
+    <h2>Industry Benchmarks</h2>
+    <p>These thresholds are based on published research and industry standards.</p>
+    <ul>
+      <li>SUS ≥ 68 = above average usability. SUS ≥ 80 = excellent (Grade A).</li>
+      <li>NPS ≥ 0 = more promoters than detractors. NPS ≥ 50 = excellent loyalty.</li>
+      <li>Task Success Rate ≥ 78% = industry average for well-designed interfaces.</li>
+      <li>Time on Task: users spending more than 2× the target time signals a critical flow problem.</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer class="wrapper">
+  <p>UX Audit Tools — UX Score Calculator</p>
+</footer>
+
+<script>
+  function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+  // ── Live previews ─────────────────────────────────────
+  function liveBar(inputId, barId, min, max) {
+    const val = parseFloat(document.getElementById(inputId).value) || 0;
+    const pct = clamp(((val - min) / (max - min)) * 100, 0, 100);
+    document.getElementById(barId).style.width = pct + '%';
+  }
+
+  function calcNpsPreview() {
+    const p = parseFloat(document.getElementById('promoters').value) || 0;
+    const d = parseFloat(document.getElementById('detractors').value) || 0;
+    const t = parseFloat(document.getElementById('total_nps').value) || 0;
+    if (t <= 0) return;
+    const nps = Math.round(((p - d) / t) * 100);
+    document.getElementById('nps_preview').value = nps;
+    // bar: NPS -100 to +100 → normalize to 0-100%
+    const pct = clamp(((nps + 100) / 200) * 100, 0, 100);
+    document.getElementById('barNps').style.width = pct + '%';
+  }
+
+  function calcTsrPreview() {
+    const s = parseFloat(document.getElementById('tasks_success').value) || 0;
+    const t = parseFloat(document.getElementById('tasks_total').value) || 0;
+    if (t <= 0) return;
+    const tsr = clamp((s / t) * 100, 0, 100);
+    document.getElementById('barTsr').style.width = tsr + '%';
+  }
+
+  function calcTotPreview() {
+    const target   = parseFloat(document.getElementById('time_target').value) || 0;
+    const observed = parseFloat(document.getElementById('time_observed').value) || 0;
+    if (observed <= 0 || target <= 0) return;
+    const score = clamp((target / observed) * 100, 0, 100);
+    document.getElementById('barTot').style.width = score + '%';
+  }
+
+  // ── Benchmark badges ──────────────────────────────────
+  function susBadge(s) {
+    if (s >= 80) return ['badge-good',    'Excellent (A)'];
+    if (s >= 68) return ['badge-average', 'Above Average'];
+    if (s >= 51) return ['badge-average', 'Average'];
+    return               ['badge-poor',   'Below Average'];
+  }
+
+  function npsBadge(n) {
+    if (n >= 50)  return ['badge-good',    'Excellent'];
+    if (n >= 0)   return ['badge-average', 'Good'];
+    return                ['badge-poor',   'At Risk'];
+  }
+
+  function tsrBadge(p) {
+    if (p >= 78)  return ['badge-good',    'Above Average'];
+    if (p >= 60)  return ['badge-average', 'Average'];
+    return                ['badge-poor',   'Below Average'];
+  }
+
+  function totBadge(s) {
+    if (s >= 80)  return ['badge-good',    'Efficient'];
+    if (s >= 50)  return ['badge-average', 'Acceptable'];
+    return                ['badge-poor',   'Too Slow'];
+  }
+
+  // ── Main calc ─────────────────────────────────────────
+  function calc() {
+    const sus      = parseFloat(document.getElementById('sus').value);
+    const promoters   = parseFloat(document.getElementById('promoters').value);
+    const detractors  = parseFloat(document.getElementById('detractors').value);
+    const total_nps   = parseFloat(document.getElementById('total_nps').value);
+    const tasks_ok    = parseFloat(document.getElementById('tasks_success').value);
+    const tasks_all   = parseFloat(document.getElementById('tasks_total').value);
+    const t_target    = parseFloat(document.getElementById('time_target').value);
+    const t_observed  = parseFloat(document.getElementById('time_observed').value);
+
+    if ([sus, promoters, detractors, total_nps, tasks_ok, tasks_all, t_target, t_observed]
+        .some(v => isNaN(v))) {
+      alert('Please fill in all fields before calculating.');
+      return;
+    }
+
+    if (total_nps <= 0 || tasks_all <= 0 || t_observed <= 0 || t_target <= 0) {
+      alert('Total values and time fields must be greater than 0.');
+      return;
+    }
+
+    // Scores normalized to 0–100
+    const susClamped = clamp(sus, 0, 100);
+
+    const npsRaw   = ((promoters - detractors) / total_nps) * 100;  // -100 to +100
+    const npsScore = clamp((npsRaw + 100) / 2, 0, 100);              // normalize to 0–100
+
+    const tsrScore = clamp((tasks_ok / tasks_all) * 100, 0, 100);
+
+    const totScore = clamp((t_target / t_observed) * 100, 0, 100);
+
+    // Weighted composite
+    const composite = (susClamped * 0.35) + (npsScore * 0.25) + (tsrScore * 0.25) + (totScore * 0.15);
+
+    // Level
+    let levelClass, levelLabel;
+    if (composite >= 78)      { levelClass = 'level-excellent'; levelLabel = 'Excellent UX 🚀'; }
+    else if (composite >= 55) { levelClass = 'level-average';   levelLabel = 'Average UX ⚖️'; }
+    else                      { levelClass = 'level-poor';      levelLabel = 'Poor UX ⚠️'; }
+
+    // Metric cards
+    const [susCls, susLbl]  = susBadge(susClamped);
+    const [npsCls, npsLbl]  = npsBadge(Math.round(npsRaw));
+    const [tsrCls, tsrLbl]  = tsrBadge(tsrScore);
+    const [totCls, totLbl]  = totBadge(totScore);
+
+    const metricsHTML = `
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="mc-label">SUS Score</span>
+          <span class="mc-value">${susClamped.toFixed(0)}</span>
+          <span class="mc-benchmark">Benchmark: ≥ 68</span>
+          <span class="mc-badge ${susCls}">${susLbl}</span>
+        </div>
+        <div class="metric-card">
+          <span class="mc-label">NPS</span>
+          <span class="mc-value">${Math.round(npsRaw) > 0 ? '+' : ''}${Math.round(npsRaw)}</span>
+          <span class="mc-benchmark">Benchmark: ≥ 0</span>
+          <span class="mc-badge ${npsCls}">${npsLbl}</span>
+        </div>
+        <div class="metric-card">
+          <span class="mc-label">Task Success Rate</span>
+          <span class="mc-value">${tsrScore.toFixed(1)}%</span>
+          <span class="mc-benchmark">Benchmark: ≥ 78%</span>
+          <span class="mc-badge ${tsrCls}">${tsrLbl}</span>
+        </div>
+        <div class="metric-card">
+          <span class="mc-label">ToT Efficiency</span>
+          <span class="mc-value">${totScore.toFixed(0)}%</span>
+          <span class="mc-benchmark">Target: ${t_target}s · Observed: ${t_observed}s</span>
+          <span class="mc-badge ${totCls}">${totLbl}</span>
+        </div>
+      </div>
+    `;
+
+    // Recommendations
+    const recos = [];
+    if (susClamped < 68) recos.push({ cls: 'r-fix',     icon: '⚠', text: `SUS score of ${susClamped.toFixed(0)} is below the 68-point threshold. Focus on learnability and error recovery — run a moderated usability test to identify the root cause.` });
+    if (npsRaw < 0)      recos.push({ cls: 'r-fix',     icon: '⚠', text: `Negative NPS (${Math.round(npsRaw)}) means more detractors than promoters. Survey detractors directly — identify and resolve the top pain point causing dissatisfaction.` });
+    if (tsrScore < 78)   recos.push({ cls: 'r-improve', icon: '↗', text: `Task success rate of ${tsrScore.toFixed(1)}% is below the 78% industry average. Review failed task recordings and simplify the critical user flow.` });
+    if (totScore < 50)   recos.push({ cls: 'r-fix',     icon: '⚠', text: `Users are taking more than 2× the target time (${t_observed}s vs ${t_target}s). Reduce cognitive load on this task — simplify steps, add inline guidance, or eliminate unnecessary decisions.` });
+    else if (totScore < 80) recos.push({ cls: 'r-improve', icon: '↗', text: `Time on task is ${t_observed}s against a ${t_target}s target. Minor improvements to affordances and copy could reduce task time significantly.` });
+
+    const recosHTML = recos.length === 0
+      ? `<div class="no-recos">All metrics are above benchmark thresholds. Monitor regularly as usage scales.</div>`
+      : `<div class="reco-list">${recos.map(r => `
+          <div class="reco-item ${r.cls}">
+            <span class="reco-icon">${r.icon}</span>
+            <span class="reco-text">${r.text}</span>
+          </div>`).join('')}
+        </div>`;
+
+    const resultEl = document.getElementById('result');
+    resultEl.innerHTML = `
+      <div class="divider"></div>
+      <div class="score-display">
+        <div class="score-main">
+          <span class="score-label">Composite UX Score</span>
+          <span class="score-big">${composite.toFixed(1)}<span>/100</span></span>
+        </div>
+        <div class="result-level ${levelClass}">${levelLabel}</div>
+      </div>
+      ${metricsHTML}
+      <div class="divider"></div>
+      <p class="reco-title">Recommendations</p>
+      ${recosHTML}
+    `;
+
+    resultEl.classList.add('visible');
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
 </body>
 </html>
