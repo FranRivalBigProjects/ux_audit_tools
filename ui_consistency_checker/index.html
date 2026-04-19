@@ -1,28 +1,688 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ui_consistency_checker</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Consistency Checker – UX Audit Tools</title>
+<meta name="description" content="Detect inconsistencies in UI components, color palettes, typography, and spacing. Get a consistency score and actionable fixes for your design system.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0d0f12;
+    --surface:   #13161b;
+    --surface-2: #181c23;
+    --border:    #1f242d;
+    --border-hi: #2e3540;
+    --accent:    #00e5c3;
+    --accent-2:  #5b6af5;
+    --text:      #e4e8ef;
+    --muted:     #6b7585;
+    --warning:   #f0a500;
+    --danger:    #ff5f57;
+    --success:   #00e5c3;
+
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+    --radius:    10px;
+    --radius-lg: 18px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative;
+    z-index: 2;
+    padding: 20px 24px;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+  }
+
+  nav a:hover { color: var(--accent); }
+  nav a::before { content: '←'; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 36px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(0,229,195,.07);
+    border: 1px solid rgba(0,229,195,.2);
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 18px;
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+  }
+
+  header h1 em { font-style: italic; color: var(--accent); }
+
+  header p {
+    color: var(--muted);
+    font-size: .95rem;
+    font-weight: 300;
+    max-width: 520px;
+  }
+
+  /* ── TOOL CARD ── */
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin: 36px 0;
+    animation: fadeUp .5s .1s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+
+  /* ── FIELDS ── */
+  .fields {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin-bottom: 28px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  label {
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: .01em;
+  }
+
+  .field-hint {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  .input-wrap { position: relative; }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 52px 12px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .95rem;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,195,.1);
+  }
+
+  .input-unit {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .score-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── BUTTON ── */
+  button {
+    width: 100%;
+    background: var(--accent);
+    color: #0d0f12;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  }
+
+  button:hover {
+    background: #00ffd6;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,195,.25);
+  }
+
+  button:active { transform: translateY(0); }
+
+  /* ── RESULT ── */
+  #result { margin-top: 28px; display: none; animation: fadeUp .4s ease both; }
+  #result.visible { display: block; }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  .result-score {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .result-number {
+    font-family: var(--font-display);
+    font-size: 3.6rem;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -.03em;
+  }
+
+  .result-number span {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .result-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    padding: 5px 14px;
+    margin-bottom: 20px;
+  }
+
+  .level-excellent { color: var(--success);  background: rgba(0,229,195,.08);  border: 1px solid rgba(0,229,195,.2); }
+  .level-average   { color: var(--warning);   background: rgba(240,165,0,.08);  border: 1px solid rgba(240,165,0,.2); }
+  .level-poor      { color: var(--danger);    background: rgba(255,95,87,.08);  border: 1px solid rgba(255,95,87,.2); }
+
+  /* dimension breakdown */
+  .breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: .8rem;
+  }
+
+  .breakdown-label {
+    width: 140px;
+    flex-shrink: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .04em;
+  }
+
+  .breakdown-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .breakdown-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .5s cubic-bezier(.4,0,.2,1);
+  }
+
+  .fill-good    { background: var(--accent); }
+  .fill-warning { background: var(--warning); }
+  .fill-bad     { background: var(--danger); }
+
+  .breakdown-val {
+    width: 36px;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+  }
+
+  .issues-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .issue-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,95,87,.06);
+    border: 1px solid rgba(255,95,87,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: #ffb3b0;
+  }
+
+  .issue-item::before {
+    content: '⚠';
+    font-size: .8rem;
+    color: var(--danger);
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .no-issues {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,229,195,.06);
+    border: 1px solid rgba(0,229,195,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: var(--accent);
+  }
+
+  .no-issues::before { content: '✓'; font-weight: 700; }
+
+  /* ── INFO ── */
+  .info-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .2s ease both;
+  }
+
+  .info-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .info-section p {
+    color: var(--muted);
+    font-size: .9rem;
+    font-weight: 300;
+    margin-bottom: 12px;
+    max-width: 580px;
+  }
+
+  .info-section ul { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  .info-section ul li {
+    display: flex;
+    gap: 10px;
+    font-size: .875rem;
+    color: var(--text);
+  }
+
+  .info-section ul li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 24px;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  footer p { font-size: .8rem; color: var(--muted); font-weight: 300; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .tool-card { padding: 22px; }
+    .result-number { font-size: 2.8rem; }
+    .breakdown-label { width: 110px; }
+  }
+</style>
+
 </head>
 <body>
-<div class="container">
-<h2>Ui Consistency Checker</h2>
 
-<label>Usability Score (0-100)</label>
-<input id="a" type="number">
+<nav class="wrapper">
+  <a href="/ux_audit_tools/">UX Audit Tools</a>
+</nav>
 
-<label>Consistency Score (0-100)</label>
-<input id="b" type="number">
+<div class="wrapper">
 
-<label>Accessibility Score (0-100)</label>
-<input id="c" type="number">
+  <header>
+    <div class="badge">UI Consistency</div>
+    <h1>UI Consistency <em>Checker</em></h1>
+    <p>Detect visual inconsistencies across your interface. Score color usage, typography, spacing, and component styling to identify design system violations.</p>
+  </header>
 
-<button onclick="calc()">Analyze</button>
+  <div class="tool-card">
 
-<div id="result"></div>
+```
+<div class="fields">
+
+  <div class="field">
+    <div class="field-header">
+      <label for="colors">Number of colors used</label>
+      <span class="field-hint">Ideal: ≤ 5</span>
+    </div>
+    <div class="input-wrap">
+      <input id="colors" type="number" min="1" placeholder="e.g. 4">
+      <span class="input-unit">clrs</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barColors"></div></div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="fonts">Number of font styles used</label>
+      <span class="field-hint">Ideal: ≤ 3</span>
+    </div>
+    <div class="input-wrap">
+      <input id="fonts" type="number" min="1" placeholder="e.g. 2">
+      <span class="input-unit">fonts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barFonts"></div></div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="spacing">Spacing system base unit (px)</label>
+      <span class="field-hint">Ideal: 4 or 8 px grid</span>
+    </div>
+    <div class="input-wrap">
+      <input id="spacing" type="number" min="1" placeholder="e.g. 8">
+      <span class="input-unit">px</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barSpacing"></div></div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="components">Component style consistency (0–100)</label>
+      <span class="field-hint">Buttons, inputs, cards</span>
+    </div>
+    <div class="input-wrap">
+      <input id="components" type="number" min="0" max="100" placeholder="e.g. 75">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barComponents"></div></div>
+  </div>
+
 </div>
 
-<script src="script.js"></script>
+<button onclick="calc()">Check Consistency</button>
+
+<div id="result"></div>
+```
+
+  </div>
+
+  <div class="info-section">
+    <h2>How Consistency Is Scored</h2>
+    <p>Each dimension is normalized to a 0–100 scale and averaged into a final consistency score.</p>
+    <ul>
+      <li>Colors: score drops 15 pts for each color above 5</li>
+      <li>Fonts: score drops 20 pts for each font style above 3</li>
+      <li>Spacing: full score for 4px or 8px grid; reduced for irregular values</li>
+      <li>Components: direct 0–100 self-assessment of style uniformity</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer class="wrapper">
+  <p>UX Audit Tools — UI Consistency Checker</p>
+</footer>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────
+  function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
+
+  function scoreColors(n) {
+    if (n <= 5) return 100;
+    return clamp(100 - (n - 5) * 15, 0, 100);
+  }
+
+  function scoreFonts(n) {
+    if (n <= 3) return 100;
+    return clamp(100 - (n - 3) * 20, 0, 100);
+  }
+
+  function scoreSpacing(px) {
+    if (px === 4 || px === 8) return 100;
+    if (px === 2 || px === 16) return 80;
+    if (px % 8 === 0) return 85;
+    if (px % 4 === 0) return 70;
+    return clamp(100 - Math.abs(px - 8) * 6, 10, 60);
+  }
+
+  function fillClass(score) {
+    if (score >= 70) return 'fill-good';
+    if (score >= 40) return 'fill-warning';
+    return 'fill-bad';
+  }
+
+  // ── Live bars ────────────────────────────────────────────
+  function updateBar(inputId, barId, scoreFn, max) {
+    const raw = parseFloat(document.getElementById(inputId).value);
+    if (isNaN(raw)) return;
+    const pct = max
+      ? clamp((raw / max) * 100, 0, 100)   // direct pct for 0-100 inputs
+      : scoreFn(raw);                        // derived score
+    document.getElementById(barId).style.width = pct + '%';
+  }
+
+  document.getElementById('colors').addEventListener('input',
+    () => updateBar('colors', 'barColors', scoreColors, null));
+  document.getElementById('fonts').addEventListener('input',
+    () => updateBar('fonts', 'barFonts', scoreFonts, null));
+  document.getElementById('spacing').addEventListener('input',
+    () => updateBar('spacing', 'barSpacing', scoreSpacing, null));
+  document.getElementById('components').addEventListener('input',
+    () => updateBar('components', 'barComponents', null, 100));
+
+  // ── Main calc ────────────────────────────────────────────
+  function calc() {
+    const colors     = parseInt(document.getElementById('colors').value);
+    const fonts      = parseInt(document.getElementById('fonts').value);
+    const spacing    = parseInt(document.getElementById('spacing').value);
+    const components = clamp(parseFloat(document.getElementById('components').value) || 0, 0, 100);
+
+    if (!colors || !fonts || !spacing) {
+      alert('Please fill in all fields.');
+      return;
+    }
+
+    const sColors     = scoreColors(colors);
+    const sFonts      = scoreFonts(fonts);
+    const sSpacing    = scoreSpacing(spacing);
+    const sComponents = components;
+
+    const total = (sColors + sFonts + sSpacing + sComponents) / 4;
+
+    // Level
+    let levelClass, levelLabel;
+    if (total >= 80) { levelClass = 'level-excellent'; levelLabel = 'Highly Consistent ✓'; }
+    else if (total >= 50) { levelClass = 'level-average'; levelLabel = 'Partially Consistent ⚖️'; }
+    else { levelClass = 'level-poor'; levelLabel = 'Inconsistent UI ⚠️'; }
+
+    // Issues
+    const issues = [];
+    if (sColors < 70)     issues.push(`Using ${colors} colors creates visual noise. Reduce to a palette of 5 or fewer.`);
+    if (sFonts < 70)      issues.push(`${fonts} font styles exceed the recommended maximum of 3. Simplify your type scale.`);
+    if (sSpacing < 70)    issues.push(`${spacing}px spacing doesn't follow a 4px or 8px grid. Standardize your spacing system.`);
+    if (sComponents < 70) issues.push('Component styling is inconsistent. Standardize buttons, inputs, and card styles across the UI.');
+
+    // Breakdown rows
+    const dims = [
+      { label: 'Color palette', score: sColors },
+      { label: 'Typography',    score: sFonts },
+      { label: 'Spacing grid',  score: sSpacing },
+      { label: 'Components',    score: sComponents },
+    ];
+
+    const breakdownHTML = `
+      <div class="breakdown">
+        ${dims.map(d => `
+          <div class="breakdown-row">
+            <span class="breakdown-label">${d.label}</span>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill ${fillClass(d.score)}" style="width:${d.score}%"></div>
+            </div>
+            <span class="breakdown-val">${Math.round(d.score)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    const issuesHTML = issues.length === 0
+      ? `<div class="no-issues">No consistency issues detected. Your design system is solid.</div>`
+      : `<div class="issues-list">${issues.map(i => `<div class="issue-item">${i}</div>`).join('')}</div>`;
+
+    const resultEl = document.getElementById('result');
+    resultEl.innerHTML = `
+      <div class="divider"></div>
+      <div class="result-score">
+        <div class="result-number">${total.toFixed(1)}<span>/100</span></div>
+      </div>
+      <div class="result-level ${levelClass}">${levelLabel}</div>
+      ${breakdownHTML}
+      ${issuesHTML}
+    `;
+
+    resultEl.classList.add('visible');
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
 </body>
 </html>
