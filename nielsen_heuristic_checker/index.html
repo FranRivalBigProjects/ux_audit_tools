@@ -1,28 +1,610 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>nielsen_heuristic_checker</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nielsen Heuristic Checker – UX Audit Tools</title>
+<meta name="description" content="Evaluate interfaces using Nielsen's usability heuristics. Score usability, consistency, and accessibility to detect UX issues instantly.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0d0f12;
+    --surface:   #13161b;
+    --surface-2: #181c23;
+    --border:    #1f242d;
+    --border-hi: #2e3540;
+    --accent:    #00e5c3;
+    --accent-2:  #5b6af5;
+    --text:      #e4e8ef;
+    --muted:     #6b7585;
+    --warning:   #f0a500;
+    --danger:    #ff5f57;
+    --success:   #00e5c3;
+
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+    --radius:    10px;
+    --radius-lg: 18px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative;
+    z-index: 2;
+    padding: 20px 24px;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+  }
+
+  nav a:hover { color: var(--accent); }
+  nav a::before { content: '←'; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 36px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(0,229,195,.07);
+    border: 1px solid rgba(0,229,195,.2);
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 18px;
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+  }
+
+  header h1 em { font-style: italic; color: var(--accent); }
+
+  header p {
+    color: var(--muted);
+    font-size: .95rem;
+    font-weight: 300;
+    max-width: 520px;
+  }
+
+  /* ── TOOL CARD ── */
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin: 36px 0;
+    animation: fadeUp .5s .1s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+
+  /* ── FORM ── */
+  .fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  label {
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: .01em;
+  }
+
+  .field-hint {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 52px 12px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .95rem;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,195,.1);
+  }
+
+  .input-unit {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  /* score bar */
+  .score-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── BUTTON ── */
+  button {
+    width: 100%;
+    background: var(--accent);
+    color: #0d0f12;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  }
+
+  button:hover {
+    background: #00ffd6;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,195,.25);
+  }
+
+  button:active { transform: translateY(0); }
+
+  /* ── RESULT ── */
+  #result {
+    margin-top: 28px;
+    display: none;
+    animation: fadeUp .4s ease both;
+  }
+
+  #result.visible { display: block; }
+
+  .result-score {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .result-number {
+    font-family: var(--font-display);
+    font-size: 3.6rem;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -.03em;
+  }
+
+  .result-number span {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .result-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    padding: 5px 14px;
+    margin-bottom: 20px;
+  }
+
+  .level-excellent {
+    color: var(--success);
+    background: rgba(0,229,195,.08);
+    border: 1px solid rgba(0,229,195,.2);
+  }
+
+  .level-average {
+    color: var(--warning);
+    background: rgba(240,165,0,.08);
+    border: 1px solid rgba(240,165,0,.2);
+  }
+
+  .level-poor {
+    color: var(--danger);
+    background: rgba(255,95,87,.08);
+    border: 1px solid rgba(255,95,87,.2);
+  }
+
+  .issues-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .issue-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,95,87,.06);
+    border: 1px solid rgba(255,95,87,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: #ffb3b0;
+  }
+
+  .issue-item::before {
+    content: '⚠';
+    font-size: .8rem;
+    color: var(--danger);
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .no-issues {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,229,195,.06);
+    border: 1px solid rgba(0,229,195,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: var(--accent);
+  }
+
+  .no-issues::before { content: '✓'; font-weight: 700; }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* ── INFO SECTION ── */
+  .info-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .2s ease both;
+  }
+
+  .info-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .info-section p {
+    color: var(--muted);
+    font-size: .9rem;
+    font-weight: 300;
+    margin-bottom: 12px;
+    max-width: 580px;
+  }
+
+  .info-section ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .info-section ul li {
+    display: flex;
+    gap: 10px;
+    font-size: .875rem;
+    color: var(--text);
+  }
+
+  .info-section ul li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 24px;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  footer p {
+    font-size: .8rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .tool-card { padding: 22px; }
+    .result-number { font-size: 2.8rem; }
+  }
+</style>
+
 </head>
 <body>
-<div class="container">
-<h2>Nielsen Heuristic Checker</h2>
 
-<label>Usability Score (0-100)</label>
-<input id="a" type="number">
+<nav class="wrapper">
+  <a href="/ux_audit_tools/">UX Audit Tools</a>
+</nav>
 
-<label>Consistency Score (0-100)</label>
-<input id="b" type="number">
+<div class="wrapper">
 
-<label>Accessibility Score (0-100)</label>
-<input id="c" type="number">
+  <header>
+    <div class="badge">Nielsen Heuristics</div>
+    <h1>Heuristic <em>Checker</em></h1>
+    <p>Score your interface across usability, consistency, and accessibility to detect UX issues instantly.</p>
+  </header>
 
-<button onclick="calc()">Analyze</button>
+  <div class="tool-card">
 
-<div id="result"></div>
+```
+<div class="fields">
+
+  <div class="field">
+    <div class="field-header">
+      <label for="scoreA">Usability Score</label>
+      <span class="field-hint">0 – 100</span>
+    </div>
+    <div class="input-wrap">
+      <input id="scoreA" type="number" min="0" max="100" placeholder="e.g. 72">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barA"></div></div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="scoreB">Consistency Score</label>
+      <span class="field-hint">0 – 100</span>
+    </div>
+    <div class="input-wrap">
+      <input id="scoreB" type="number" min="0" max="100" placeholder="e.g. 65">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barB"></div></div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="scoreC">Accessibility Score</label>
+      <span class="field-hint">0 – 100</span>
+    </div>
+    <div class="input-wrap">
+      <input id="scoreC" type="number" min="0" max="100" placeholder="e.g. 80">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barC"></div></div>
+  </div>
+
 </div>
 
-<script src="script.js"></script>
+<button onclick="calc()">Analyze Interface</button>
+
+<div id="result"></div>
+```
+
+  </div><!-- /.tool-card -->
+
+  <div class="info-section">
+    <h2>About This Tool</h2>
+    <p>
+      Based on Jakob Nielsen's 10 usability heuristics, this checker evaluates three core dimensions
+      of interface quality and returns a composite UX score with actionable issue flags.
+    </p>
+    <ul>
+      <li>Scores below 50 in any dimension trigger a specific issue alert</li>
+      <li>Composite score above 80 = Excellent UX</li>
+      <li>Composite score 50–80 = Average UX — improvements recommended</li>
+      <li>Composite score below 50 = Poor UX — immediate action needed</li>
+    </ul>
+  </div>
+
+</div><!-- /.wrapper -->
+
+<footer class="wrapper">
+  <p>UX Audit Tools — Nielsen Heuristic Checker</p>
+</footer>
+
+<script>
+  // Live score bars
+  function updateBar(inputId, barId) {
+    const val = parseFloat(document.getElementById(inputId).value) || 0;
+    const clamped = Math.min(Math.max(val, 0), 100);
+    document.getElementById(barId).style.width = clamped + '%';
+  }
+
+  document.getElementById('scoreA').addEventListener('input', () => updateBar('scoreA', 'barA'));
+  document.getElementById('scoreB').addEventListener('input', () => updateBar('scoreB', 'barB'));
+  document.getElementById('scoreC').addEventListener('input', () => updateBar('scoreC', 'barC'));
+
+  // Main calculation
+  function calc() {
+    const a = Math.min(Math.max(parseFloat(document.getElementById('scoreA').value) || 0, 0), 100);
+    const b = Math.min(Math.max(parseFloat(document.getElementById('scoreB').value) || 0, 0), 100);
+    const c = Math.min(Math.max(parseFloat(document.getElementById('scoreC').value) || 0, 0), 100);
+
+    const score = (a + b + c) / 3;
+
+    // Level
+    let levelClass, levelLabel;
+    if (score > 80) {
+      levelClass = 'level-excellent';
+      levelLabel = 'Excellent UX 🚀';
+    } else if (score >= 50) {
+      levelClass = 'level-average';
+      levelLabel = 'Average UX ⚖️';
+    } else {
+      levelClass = 'level-poor';
+      levelLabel = 'Poor UX ⚠️';
+    }
+
+    // Issues
+    const issues = [];
+    if (a < 50) issues.push('Poor usability detected. Review navigation flow and user feedback mechanisms.');
+    if (b < 50) issues.push('UI inconsistency issues found. Standardize components, colors, and interactions.');
+    if (c < 50) issues.push('Accessibility problems detected. Check contrast ratios, keyboard navigation, and ARIA labels.');
+
+    // Build HTML
+    let issuesHTML = '';
+    if (issues.length === 0) {
+      issuesHTML = `<div class="no-issues">No critical issues detected across all dimensions.</div>`;
+    } else {
+      issuesHTML = `<div class="issues-list">` +
+        issues.map(i => `<div class="issue-item">${i}</div>`).join('') +
+        `</div>`;
+    }
+
+    const resultEl = document.getElementById('result');
+    resultEl.innerHTML = `
+      <div class="divider"></div>
+      <div class="result-score">
+        <div class="result-number">${score.toFixed(1)}<span>/100</span></div>
+      </div>
+      <div class="result-level ${levelClass}">${levelLabel}</div>
+      ${issuesHTML}
+    `;
+
+    resultEl.classList.add('visible');
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
 </body>
 </html>
