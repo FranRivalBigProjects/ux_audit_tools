@@ -1,28 +1,839 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ux_audit_tool</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Audit Tool – Full Usability Evaluation</title>
+<meta name="description" content="Perform a complete UX audit across navigation, visual hierarchy, feedback, error handling, and content clarity. Get a weighted score and prioritized action plan.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0d0f12;
+    --surface:   #13161b;
+    --surface-2: #181c23;
+    --border:    #1f242d;
+    --border-hi: #2e3540;
+    --accent:    #00e5c3;
+    --accent-2:  #5b6af5;
+    --text:      #e4e8ef;
+    --muted:     #6b7585;
+    --warning:   #f0a500;
+    --danger:    #ff5f57;
+    --success:   #00e5c3;
+
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+    --radius:    10px;
+    --radius-lg: 18px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative;
+    z-index: 2;
+    padding: 20px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+  }
+
+  nav a:hover { color: var(--accent); }
+  nav a::before { content: '←'; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 36px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(0,229,195,.07);
+    border: 1px solid rgba(0,229,195,.2);
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 18px;
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+  }
+
+  header h1 em { font-style: italic; color: var(--accent); }
+
+  header p {
+    color: var(--muted);
+    font-size: .95rem;
+    font-weight: 300;
+    max-width: 560px;
+  }
+
+  /* ── TOOL CARD ── */
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin: 36px 0;
+    animation: fadeUp .5s .1s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+
+  /* ── CATEGORY GROUPS ── */
+  .category {
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .category:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .category-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .category-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: rgba(0,229,195,.08);
+    border: 1px solid rgba(0,229,195,.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .category-name {
+    font-size: .9rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .category-weight {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 2px 10px;
+  }
+
+  /* ── FIELD ── */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  label {
+    font-size: .825rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .field-hint {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    opacity: .7;
+  }
+
+  .input-wrap { position: relative; }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 52px 11px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .9rem;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,195,.1);
+  }
+
+  .input-unit {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .score-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── BUTTON ── */
+  .btn-run {
+    width: 100%;
+    background: var(--accent);
+    color: #0d0f12;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 28px;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  }
+
+  .btn-run:hover {
+    background: #00ffd6;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,195,.25);
+  }
+
+  .btn-run:active { transform: translateY(0); }
+
+  /* ── RESULT ── */
+  #result { margin-top: 28px; display: none; animation: fadeUp .4s ease both; }
+  #result.visible { display: block; }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  .result-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .result-number {
+    font-family: var(--font-display);
+    font-size: 3.6rem;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -.03em;
+  }
+
+  .result-number span {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .result-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    padding: 5px 14px;
+    align-self: flex-start;
+  }
+
+  .level-excellent { color: var(--success);  background: rgba(0,229,195,.08);  border: 1px solid rgba(0,229,195,.2); }
+  .level-average   { color: var(--warning);   background: rgba(240,165,0,.08);  border: 1px solid rgba(240,165,0,.2); }
+  .level-poor      { color: var(--danger);    background: rgba(255,95,87,.08);  border: 1px solid rgba(255,95,87,.2); }
+
+  /* breakdown */
+  .breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .breakdown-label {
+    width: 150px;
+    flex-shrink: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .04em;
+  }
+
+  .breakdown-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .breakdown-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+  }
+
+  .fill-good    { background: var(--accent); }
+  .fill-warning { background: var(--warning); }
+  .fill-bad     { background: var(--danger); }
+
+  .breakdown-val {
+    width: 36px;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+  }
+
+  /* priority list */
+  .priority-title {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .priority-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .priority-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+  }
+
+  .priority-item.p-high   { border-left: 3px solid var(--danger);  }
+  .priority-item.p-medium { border-left: 3px solid var(--warning); }
+  .priority-item.p-low    { border-left: 3px solid var(--accent);  }
+
+  .priority-badge {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .p-high   .priority-badge { background: rgba(255,95,87,.15);   color: var(--danger);  }
+  .p-medium .priority-badge { background: rgba(240,165,0,.15);   color: var(--warning); }
+  .p-low    .priority-badge { background: rgba(0,229,195,.12);   color: var(--accent);  }
+
+  .priority-text { color: var(--text); line-height: 1.5; }
+
+  .no-issues {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,229,195,.06);
+    border: 1px solid rgba(0,229,195,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: var(--accent);
+  }
+
+  .no-issues::before { content: '✓'; font-weight: 700; }
+
+  /* ── INFO ── */
+  .info-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .2s ease both;
+  }
+
+  .info-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .info-section p {
+    color: var(--muted);
+    font-size: .9rem;
+    font-weight: 300;
+    margin-bottom: 12px;
+    max-width: 580px;
+  }
+
+  .info-section ul { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  .info-section ul li {
+    display: flex;
+    gap: 10px;
+    font-size: .875rem;
+    color: var(--text);
+  }
+
+  .info-section ul li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  footer p { font-size: .8rem; color: var(--muted); font-weight: 300; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .tool-card { padding: 22px; }
+    .result-number { font-size: 2.6rem; }
+    .breakdown-label { width: 110px; }
+  }
+</style>
+
 </head>
 <body>
-<div class="container">
-<h2>Ux Audit Tool</h2>
 
-<label>Usability Score (0-100)</label>
-<input id="a" type="number">
+<nav class="wrapper">
+  <a href="/ux_audit_tools/">UX Audit Tools</a>
+</nav>
 
-<label>Consistency Score (0-100)</label>
-<input id="b" type="number">
+<div class="wrapper">
 
-<label>Accessibility Score (0-100)</label>
-<input id="c" type="number">
+  <header>
+    <div class="badge">Full Audit</div>
+    <h1>UX <em>Audit</em> Tool</h1>
+    <p>Evaluate your product across five weighted UX dimensions. Get a composite score and a prioritized action plan to fix what matters most.</p>
+  </header>
 
-<button onclick="calc()">Analyze</button>
+  <div class="tool-card">
 
-<div id="result"></div>
+```
+<!-- Category 1 -->
+<div class="category">
+  <div class="category-header">
+    <div class="category-title">
+      <div class="category-icon">◎</div>
+      <span class="category-name">Navigation & Information Architecture</span>
+    </div>
+    <span class="category-weight">Weight 25%</span>
+  </div>
+  <div class="field">
+    <div class="field-header">
+      <label for="nav">How easily can users find what they need? (0–100)</label>
+      <span class="field-hint">0 = lost, 100 = instant</span>
+    </div>
+    <div class="input-wrap">
+      <input id="nav" type="number" min="0" max="100" placeholder="e.g. 70">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barNav"></div></div>
+  </div>
 </div>
 
-<script src="script.js"></script>
+<!-- Category 2 -->
+<div class="category">
+  <div class="category-header">
+    <div class="category-title">
+      <div class="category-icon">⬡</div>
+      <span class="category-name">Visual Hierarchy</span>
+    </div>
+    <span class="category-weight">Weight 20%</span>
+  </div>
+  <div class="field">
+    <div class="field-header">
+      <label for="hierarchy">Does the layout guide user attention effectively? (0–100)</label>
+      <span class="field-hint">0 = chaotic, 100 = crystal clear</span>
+    </div>
+    <div class="input-wrap">
+      <input id="hierarchy" type="number" min="0" max="100" placeholder="e.g. 65">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barHierarchy"></div></div>
+  </div>
+</div>
+
+<!-- Category 3 -->
+<div class="category">
+  <div class="category-header">
+    <div class="category-title">
+      <div class="category-icon">◈</div>
+      <span class="category-name">Feedback & System Response</span>
+    </div>
+    <span class="category-weight">Weight 20%</span>
+  </div>
+  <div class="field">
+    <div class="field-header">
+      <label for="feedback">Does the system communicate status and responses? (0–100)</label>
+      <span class="field-hint">0 = silent, 100 = always clear</span>
+    </div>
+    <div class="input-wrap">
+      <input id="feedback" type="number" min="0" max="100" placeholder="e.g. 55">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barFeedback"></div></div>
+  </div>
+</div>
+
+<!-- Category 4 -->
+<div class="category">
+  <div class="category-header">
+    <div class="category-title">
+      <div class="category-icon">⚑</div>
+      <span class="category-name">Error Handling</span>
+    </div>
+    <span class="category-weight">Weight 20%</span>
+  </div>
+  <div class="field">
+    <div class="field-header">
+      <label for="errors">Are errors clear, recoverable, and non-punitive? (0–100)</label>
+      <span class="field-hint">0 = confusing, 100 = excellent recovery</span>
+    </div>
+    <div class="input-wrap">
+      <input id="errors" type="number" min="0" max="100" placeholder="e.g. 60">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barErrors"></div></div>
+  </div>
+</div>
+
+<!-- Category 5 -->
+<div class="category">
+  <div class="category-header">
+    <div class="category-title">
+      <div class="category-icon">⊞</div>
+      <span class="category-name">Content Clarity</span>
+    </div>
+    <span class="category-weight">Weight 15%</span>
+  </div>
+  <div class="field">
+    <div class="field-header">
+      <label for="content">Is the language clear, concise, and scannable? (0–100)</label>
+      <span class="field-hint">0 = confusing, 100 = perfectly clear</span>
+    </div>
+    <div class="input-wrap">
+      <input id="content" type="number" min="0" max="100" placeholder="e.g. 80">
+      <span class="input-unit">pts</span>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="barContent"></div></div>
+  </div>
+</div>
+
+<button class="btn-run" onclick="calc()">Run Full Audit</button>
+
+<div id="result"></div>
+```
+
+  </div>
+
+  <div class="info-section">
+    <h2>How the Audit Works</h2>
+    <p>Each dimension is scored 0–100 and multiplied by its weight to produce a composite UX audit score. Issues are flagged with priority levels based on impact and score.</p>
+    <ul>
+      <li>Navigation carries the highest weight (25%) — it's the foundation of usability</li>
+      <li>Scores below 40 trigger a High priority flag — immediate action needed</li>
+      <li>Scores 40–65 trigger a Medium priority flag — improvements recommended</li>
+      <li>Scores above 65 are considered healthy — minor optimizations only</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer class="wrapper">
+  <p>UX Audit Tools — Full UX Audit Tool</p>
+</footer>
+
+<script>
+  const FIELDS = [
+    { id: 'nav',       bar: 'barNav',       label: 'Navigation & IA',    weight: 0.25 },
+    { id: 'hierarchy', bar: 'barHierarchy', label: 'Visual Hierarchy',   weight: 0.20 },
+    { id: 'feedback',  bar: 'barFeedback',  label: 'Feedback & Response',weight: 0.20 },
+    { id: 'errors',    bar: 'barErrors',    label: 'Error Handling',     weight: 0.20 },
+    { id: 'content',   bar: 'barContent',   label: 'Content Clarity',    weight: 0.15 },
+  ];
+
+  const ACTIONS = {
+    nav:       {
+      high:   'Navigation is broken. Redesign your IA — run card sorting and simplify menu depth.',
+      medium: 'Navigation needs work. Clarify labels and reduce the number of clicks to key pages.',
+      low:    'Navigation is solid. Consider progressive disclosure for advanced features.',
+    },
+    hierarchy: {
+      high:   'Visual hierarchy is absent. Establish a clear type scale and use size/weight contrast to direct attention.',
+      medium: 'Visual hierarchy is weak in places. Audit CTAs and heading levels for consistent prominence.',
+      low:    'Good visual hierarchy. Fine-tune whitespace around primary actions.',
+    },
+    feedback:  {
+      high:   'System gives no feedback. Add loading states, success messages, and hover/active states to all interactions.',
+      medium: 'Feedback is inconsistent. Ensure every user action has a visible response within 100ms.',
+      low:    'Feedback is mostly good. Add micro-animations to reinforce key interactions.',
+    },
+    errors:    {
+      high:   'Error handling is poor. Rewrite error messages in plain language with clear recovery paths.',
+      medium: 'Some errors are unclear. Add inline validation and contextual help to reduce user frustration.',
+      low:    'Error handling is decent. Add undo functionality where possible.',
+    },
+    content:   {
+      high:   'Content is confusing. Simplify language, use active voice, and break text into scannable chunks.',
+      medium: 'Content clarity needs improvement. Cut filler words and add descriptive headings.',
+      low:    'Content is clear. Consider A/B testing headlines for conversion uplift.',
+    },
+  };
+
+  function clamp(v) { return Math.min(Math.max(v, 0), 100); }
+
+  function fillClass(score) {
+    if (score >= 65) return 'fill-good';
+    if (score >= 40) return 'fill-warning';
+    return 'fill-bad';
+  }
+
+  function priorityClass(score) {
+    if (score < 40) return 'p-high';
+    if (score < 65) return 'p-medium';
+    return 'p-low';
+  }
+
+  function priorityLabel(score) {
+    if (score < 40) return 'High';
+    if (score < 65) return 'Medium';
+    return 'Low';
+  }
+
+  // Live bars
+  FIELDS.forEach(f => {
+    document.getElementById(f.id).addEventListener('input', () => {
+      const val = clamp(parseFloat(document.getElementById(f.id).value) || 0);
+      document.getElementById(f.bar).style.width = val + '%';
+    });
+  });
+
+  function calc() {
+    const scores = {};
+    for (const f of FIELDS) {
+      const raw = parseFloat(document.getElementById(f.id).value);
+      if (isNaN(raw)) { alert('Please fill in all fields.'); return; }
+      scores[f.id] = clamp(raw);
+    }
+
+    // Weighted total
+    const total = FIELDS.reduce((sum, f) => sum + scores[f.id] * f.weight, 0);
+
+    // Level
+    let levelClass, levelLabel;
+    if (total >= 80)      { levelClass = 'level-excellent'; levelLabel = 'Excellent UX 🚀'; }
+    else if (total >= 55) { levelClass = 'level-average';   levelLabel = 'Average UX ⚖️'; }
+    else                  { levelClass = 'level-poor';      levelLabel = 'Poor UX ⚠️'; }
+
+    // Breakdown
+    const breakdownHTML = `
+      <div class="breakdown">
+        ${FIELDS.map(f => `
+          <div class="breakdown-row">
+            <span class="breakdown-label">${f.label}</span>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill ${fillClass(scores[f.id])}"
+                   style="width:${scores[f.id]}%"></div>
+            </div>
+            <span class="breakdown-val">${scores[f.id]}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // Prioritized actions — sorted high → medium → low
+    const items = FIELDS.map(f => ({
+      id:    f.id,
+      score: scores[f.id],
+      pClass: priorityClass(scores[f.id]),
+      pLabel: priorityLabel(scores[f.id]),
+      action: ACTIONS[f.id][priorityClass(scores[f.id]).replace('p-', '')],
+    })).sort((a, b) => a.score - b.score);
+
+    const allGood = items.every(i => i.pClass === 'p-low');
+
+    const actionsHTML = allGood
+      ? `<div class="no-issues">All dimensions are healthy. Continue monitoring and run A/B tests for incremental gains.</div>`
+      : `
+        <p class="priority-title">Prioritized Action Plan</p>
+        <div class="priority-list">
+          ${items.filter(i => i.pClass !== 'p-low').map(i => `
+            <div class="priority-item ${i.pClass}">
+              <span class="priority-badge">${i.pLabel}</span>
+              <span class="priority-text">${i.action}</span>
+            </div>
+          `).join('')}
+          ${items.filter(i => i.pClass === 'p-low').map(i => `
+            <div class="priority-item ${i.pClass}">
+              <span class="priority-badge">${i.pLabel}</span>
+              <span class="priority-text">${i.action}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+    const resultEl = document.getElementById('result');
+    resultEl.innerHTML = `
+      <div class="divider"></div>
+      <div class="result-top">
+        <div class="result-number">${total.toFixed(1)}<span>/100</span></div>
+        <div class="result-level ${levelClass}">${levelLabel}</div>
+      </div>
+      ${breakdownHTML}
+      <div class="divider"></div>
+      ${actionsHTML}
+    `;
+
+    resultEl.classList.add('visible');
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
 </body>
 </html>
