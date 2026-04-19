@@ -1,28 +1,716 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ux_issue_detector</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Issue Detector – Detect Usability Friction Points</title>
+<meta name="description" content="Detect usability friction points and UX issues across navigation, forms, feedback, accessibility, and performance. Get a prioritized list of issues to fix.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0d0f12;
+    --surface:   #13161b;
+    --surface-2: #181c23;
+    --border:    #1f242d;
+    --border-hi: #2e3540;
+    --accent:    #00e5c3;
+    --accent-2:  #5b6af5;
+    --text:      #e4e8ef;
+    --muted:     #6b7585;
+    --warning:   #f0a500;
+    --danger:    #ff5f57;
+    --success:   #00e5c3;
+
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+    --radius:    10px;
+    --radius-lg: 18px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative;
+    z-index: 2;
+    padding: 20px 24px;
+    max-width: 740px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+  }
+
+  nav a:hover { color: var(--accent); }
+  nav a::before { content: '←'; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 36px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(0,229,195,.07);
+    border: 1px solid rgba(0,229,195,.2);
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 18px;
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+  }
+
+  header h1 em { font-style: italic; color: var(--accent); }
+
+  header p {
+    color: var(--muted);
+    font-size: .95rem;
+    font-weight: 300;
+    max-width: 560px;
+  }
+
+  /* ── TOOL CARD ── */
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin: 36px 0;
+    animation: fadeUp .5s .1s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+
+  /* ── CATEGORY BLOCK ── */
+  .category {
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .category:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .category-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: rgba(0,229,195,.08);
+    border: 1px solid rgba(0,229,195,.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .category-name {
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* ── CHECKLIST ITEMS ── */
+  .check-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+    user-select: none;
+  }
+
+  .check-item:hover {
+    border-color: var(--border-hi);
+  }
+
+  .check-item.checked {
+    border-color: rgba(255,95,87,.35);
+    background: rgba(255,95,87,.05);
+  }
+
+  /* hide native checkbox */
+  .check-item input[type="checkbox"] { display: none; }
+
+  .check-box {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1px solid var(--border-hi);
+    background: var(--surface);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--transition), background var(--transition);
+    font-size: 10px;
+    color: transparent;
+  }
+
+  .check-item.checked .check-box {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+  }
+
+  .check-text {
+    flex: 1;
+  }
+
+  .check-label {
+    font-size: .875rem;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .check-impact {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  .impact-high   { color: var(--danger); }
+  .impact-medium { color: var(--warning); }
+  .impact-low    { color: var(--accent); }
+
+  /* ── BUTTON ── */
+  .btn-run {
+    width: 100%;
+    background: var(--accent);
+    color: #0d0f12;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 28px;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  }
+
+  .btn-run:hover {
+    background: #00ffd6;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,195,.25);
+  }
+
+  .btn-run:active { transform: translateY(0); }
+
+  /* ── RESULT ── */
+  #result { margin-top: 28px; display: none; animation: fadeUp .4s ease both; }
+  #result.visible { display: block; }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  /* summary bar */
+  .summary-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .result-number {
+    font-family: var(--font-display);
+    font-size: 3.4rem;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -.03em;
+  }
+
+  .result-number span {
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .result-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    padding: 5px 14px;
+    align-self: flex-start;
+  }
+
+  .level-excellent { color: var(--success);  background: rgba(0,229,195,.08);  border: 1px solid rgba(0,229,195,.2); }
+  .level-average   { color: var(--warning);   background: rgba(240,165,0,.08);  border: 1px solid rgba(240,165,0,.2); }
+  .level-poor      { color: var(--danger);    background: rgba(255,95,87,.08);  border: 1px solid rgba(255,95,87,.2); }
+
+  /* impact counters */
+  .impact-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .impact-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    border-radius: 100px;
+    padding: 5px 14px;
+  }
+
+  .impact-pill .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+
+  .pill-high   { background: rgba(255,95,87,.1);  border: 1px solid rgba(255,95,87,.25);  color: var(--danger); }
+  .pill-medium { background: rgba(240,165,0,.1);  border: 1px solid rgba(240,165,0,.25);  color: var(--warning); }
+  .pill-low    { background: rgba(0,229,195,.08); border: 1px solid rgba(0,229,195,.2);   color: var(--accent); }
+
+  .dot-high   { background: var(--danger); }
+  .dot-medium { background: var(--warning); }
+  .dot-low    { background: var(--accent); }
+
+  /* issues list */
+  .issues-section-title {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .issues-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .issue-card {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+  }
+
+  .issue-card.i-high   { border-left: 3px solid var(--danger); }
+  .issue-card.i-medium { border-left: 3px solid var(--warning); }
+  .issue-card.i-low    { border-left: 3px solid var(--accent); }
+
+  .issue-badge {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .i-high   .issue-badge { background: rgba(255,95,87,.15);  color: var(--danger); }
+  .i-medium .issue-badge { background: rgba(240,165,0,.15);  color: var(--warning); }
+  .i-low    .issue-badge { background: rgba(0,229,195,.12);  color: var(--accent); }
+
+  .issue-body { flex: 1; }
+
+  .issue-title {
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 3px;
+    line-height: 1.3;
+  }
+
+  .issue-fix {
+    font-size: .78rem;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.5;
+  }
+
+  .no-issues {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,229,195,.06);
+    border: 1px solid rgba(0,229,195,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: var(--accent);
+  }
+
+  .no-issues::before { content: '✓'; font-weight: 700; }
+
+  /* ── INFO ── */
+  .info-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .2s ease both;
+  }
+
+  .info-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .info-section p {
+    color: var(--muted);
+    font-size: .9rem;
+    font-weight: 300;
+    margin-bottom: 12px;
+    max-width: 600px;
+  }
+
+  .info-section ul { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  .info-section ul li {
+    display: flex;
+    gap: 10px;
+    font-size: .875rem;
+    color: var(--text);
+  }
+
+  .info-section ul li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 24px;
+    max-width: 740px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  footer p { font-size: .8rem; color: var(--muted); font-weight: 300; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .tool-card { padding: 20px; }
+    .result-number { font-size: 2.6rem; }
+  }
+</style>
+
 </head>
 <body>
-<div class="container">
-<h2>Ux Issue Detector</h2>
 
-<label>Usability Score (0-100)</label>
-<input id="a" type="number">
+<nav class="wrapper">
+  <a href="/ux_audit_tools/">UX Audit Tools</a>
+</nav>
 
-<label>Consistency Score (0-100)</label>
-<input id="b" type="number">
+<div class="wrapper">
 
-<label>Accessibility Score (0-100)</label>
-<input id="c" type="number">
+  <header>
+    <div class="badge">Issue Detector</div>
+    <h1>UX Issue <em>Detector</em></h1>
+    <p>Check every symptom you observe in your interface. The detector maps friction points to root causes and gives you a prioritized fix list.</p>
+  </header>
 
-<button onclick="calc()">Analyze</button>
+  <div class="tool-card">
+    <div id="checklistContainer"></div>
+    <button class="btn-run" onclick="detect()">Detect Issues</button>
+    <div id="result"></div>
+  </div>
 
-<div id="result"></div>
+  <div class="info-section">
+    <h2>How It Works</h2>
+    <p>Each symptom is linked to an impact level and a root cause. Check every issue you've observed — the detector aggregates them into a prioritized report.</p>
+    <ul>
+      <li>High impact — directly breaks user flows or blocks conversions</li>
+      <li>Medium impact — creates friction and increases drop-off</li>
+      <li>Low impact — minor annoyances that compound over time</li>
+    </ul>
+  </div>
+
 </div>
 
-<script src="script.js"></script>
+<footer class="wrapper">
+  <p>UX Audit Tools — UX Issue Detector</p>
+</footer>
+
+<script>
+  const CATEGORIES = [
+    {
+      icon: '◎',
+      name: 'Navigation & Wayfinding',
+      issues: [
+        { id: 'n1', label: 'Users cannot find key pages without searching',           impact: 'high',   fix: 'Restructure navigation using card sorting. Expose top 5 destinations in the primary menu.' },
+        { id: 'n2', label: 'No breadcrumbs or location indicators',                   impact: 'medium', fix: 'Add breadcrumbs and highlight active states in the navigation to orient users.' },
+        { id: 'n3', label: 'Back button breaks or causes unexpected behavior',         impact: 'high',   fix: 'Audit all route changes. Ensure URL history is updated correctly on every state change.' },
+        { id: 'n4', label: 'Menu labels are ambiguous or use internal jargon',         impact: 'medium', fix: 'Rename menu items using user language. Run a 5-second test to validate label clarity.' },
+      ]
+    },
+    {
+      icon: '◈',
+      name: 'Forms & Input',
+      issues: [
+        { id: 'f1', label: 'Error messages appear only after form submission',         impact: 'high',   fix: 'Implement inline validation that triggers on blur, not only on submit.' },
+        { id: 'f2', label: 'Required fields are not clearly marked',                   impact: 'medium', fix: 'Mark required fields with a visible indicator. Never rely on color alone.' },
+        { id: 'f3', label: 'Form loses data on back navigation or page refresh',       impact: 'high',   fix: 'Persist form state using sessionStorage or auto-save drafts.' },
+        { id: 'f4', label: 'Input fields lack placeholder text or examples',           impact: 'low',    fix: 'Add descriptive placeholders and format examples (e.g. "DD/MM/YYYY") to every field.' },
+      ]
+    },
+    {
+      icon: '⬡',
+      name: 'Feedback & Loading',
+      issues: [
+        { id: 'b1', label: 'Buttons give no visual feedback when clicked',             impact: 'high',   fix: 'Add active/pressed states and loading spinners to all interactive elements.' },
+        { id: 'b2', label: 'No loading indicator during async operations',             impact: 'high',   fix: 'Show a skeleton screen or progress indicator for any operation over 300ms.' },
+        { id: 'b3', label: 'Success/failure states are not communicated clearly',      impact: 'medium', fix: 'Add toast notifications or inline status messages for every action outcome.' },
+        { id: 'b4', label: 'Page transitions are abrupt with no animation',            impact: 'low',    fix: 'Add subtle fade or slide transitions between views to maintain spatial context.' },
+      ]
+    },
+    {
+      icon: '⚑',
+      name: 'Accessibility',
+      issues: [
+        { id: 'a1', label: 'Text contrast ratio is below 4.5:1',                       impact: 'high',   fix: 'Audit all text/background combinations using a contrast checker. Target ≥ 4.5:1 (WCAG AA).' },
+        { id: 'a2', label: 'Interactive elements are not keyboard-navigable',           impact: 'high',   fix: 'Ensure all buttons, links, and form fields are reachable via Tab key with visible focus styles.' },
+        { id: 'a3', label: 'Images lack alt text',                                     impact: 'medium', fix: 'Add descriptive alt attributes to all meaningful images. Use alt="" for decorative ones.' },
+        { id: 'a4', label: 'Font size is below 14px for body text',                    impact: 'medium', fix: 'Set body font size to 16px minimum. Avoid fixed px units that ignore user preferences.' },
+      ]
+    },
+    {
+      icon: '⊞',
+      name: 'Performance & Responsiveness',
+      issues: [
+        { id: 'p1', label: 'Page takes more than 3 seconds to load on mobile',         impact: 'high',   fix: 'Optimize images, defer non-critical JS, and leverage browser caching. Target LCP < 2.5s.' },
+        { id: 'p2', label: 'Layout breaks on screens below 400px width',               impact: 'high',   fix: 'Test at 320px, 375px, and 414px. Fix overflow issues and use responsive units.' },
+        { id: 'p3', label: 'Tap targets are smaller than 44×44px on mobile',           impact: 'medium', fix: 'Increase button and link sizes. Ensure minimum 44px touch target per Apple/Google guidelines.' },
+        { id: 'p4', label: 'Content shifts after page load (layout shift)',             impact: 'medium', fix: 'Set explicit width/height on images and embeds. Avoid injecting content above the fold.' },
+      ]
+    },
+  ];
+
+  // ── Render checklist ──────────────────────────────────
+  const container = document.getElementById('checklistContainer');
+  container.innerHTML = CATEGORIES.map(cat => `
+    <div class="category">
+      <div class="category-header">
+        <div class="category-icon">${cat.icon}</div>
+        <span class="category-name">${cat.name}</span>
+      </div>
+      <div class="check-list">
+        ${cat.issues.map(issue => `
+          <label class="check-item" id="item_${issue.id}" onclick="toggle('${issue.id}')">
+            <input type="checkbox" id="${issue.id}">
+            <div class="check-box" id="box_${issue.id}">✓</div>
+            <div class="check-text">
+              <div class="check-label">${issue.label}</div>
+              <div class="check-impact impact-${issue.impact}">${issue.impact} impact</div>
+            </div>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // ── Toggle ────────────────────────────────────────────
+  function toggle(id) {
+    const cb   = document.getElementById(id);
+    const item = document.getElementById('item_' + id);
+    // toggle happens after click default, read new state
+    setTimeout(() => {
+      const checked = cb.checked;
+      item.classList.toggle('checked', checked);
+    }, 0);
+  }
+
+  // ── Detect ────────────────────────────────────────────
+  function detect() {
+    const allIssues = CATEGORIES.flatMap(cat =>
+      cat.issues.map(issue => ({
+        ...issue,
+        checked: document.getElementById(issue.id).checked,
+      }))
+    );
+
+    const detected = allIssues.filter(i => i.checked);
+
+    if (detected.length === 0) {
+      const resultEl = document.getElementById('result');
+      resultEl.innerHTML = `
+        <div class="divider"></div>
+        <div class="no-issues">No issues selected. If everything looks good, run a user test to validate.</div>
+      `;
+      resultEl.classList.add('visible');
+      return;
+    }
+
+    const high   = detected.filter(i => i.impact === 'high');
+    const medium = detected.filter(i => i.impact === 'medium');
+    const low    = detected.filter(i => i.impact === 'low');
+
+    const total    = allIssues.length;
+    const score    = Math.round(((total - detected.length) / total) * 100);
+
+    let levelClass, levelLabel;
+    if (score >= 80)      { levelClass = 'level-excellent'; levelLabel = 'Minor Issues Only ✓'; }
+    else if (score >= 50) { levelClass = 'level-average';   levelLabel = 'Friction Detected ⚖️'; }
+    else                  { levelClass = 'level-poor';      levelLabel = 'Critical Issues ⚠️'; }
+
+    // sorted: high → medium → low
+    const sorted = [...high, ...medium, ...low];
+
+    const listHTML = sorted.map(i => `
+      <div class="issue-card i-${i.impact}">
+        <span class="issue-badge">${i.impact}</span>
+        <div class="issue-body">
+          <div class="issue-title">${i.label}</div>
+          <div class="issue-fix">${i.fix}</div>
+        </div>
+      </div>
+    `).join('');
+
+    const resultEl = document.getElementById('result');
+    resultEl.innerHTML = `
+      <div class="divider"></div>
+      <div class="summary-row">
+        <div class="result-number">${detected.length}<span> issues</span></div>
+        <div class="result-level ${levelClass}">${levelLabel}</div>
+      </div>
+      <div class="impact-summary">
+        ${high.length   ? `<div class="impact-pill pill-high">  <span class="dot dot-high"></span>   ${high.length} high</div>`   : ''}
+        ${medium.length ? `<div class="impact-pill pill-medium"><span class="dot dot-medium"></span> ${medium.length} medium</div>` : ''}
+        ${low.length    ? `<div class="impact-pill pill-low">   <span class="dot dot-low"></span>    ${low.length} low</div>`    : ''}
+      </div>
+      <p class="issues-section-title">Prioritized Fix List</p>
+      <div class="issues-list">${listHTML}</div>
+    `;
+
+    resultEl.classList.add('visible');
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
 </body>
 </html>
