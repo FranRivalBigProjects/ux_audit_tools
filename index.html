@@ -1,30 +1,368 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Google Verification -->
-    <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+```
+<!-- Google Verification -->
+<meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
 
-    <!-- SEO Meta -->
-    <title>UX Audit Tools for Heuristic Evaluation, Usability Scoring & Design Analysis</title>
-    <meta name="description" content="Perform complete UX audits with tools for heuristic evaluation, usability scoring, UI consistency checks, and UX issue detection. Improve user experience and conversions.">
+<!-- SEO Meta -->
+<title>UX Audit Tools for Heuristic Evaluation, Usability Scoring & Design Analysis</title>
+<meta name="description" content="Perform complete UX audits with tools for heuristic evaluation, usability scoring, UI consistency checks, and UX issue detection. Improve user experience and conversions.">
+<meta name="keywords" content="ux audit tools, nielsen heuristic checker, ux score calculator, usability audit tool website, ui consistency checker ux, ux issue detector, heuristic evaluation ux tools">
 
-    <!-- Keywords -->
-    <meta name="keywords" content="ux audit tools, nielsen heuristic checker, ux score calculator, usability audit tool website, ui consistency checker ux, ux issue detector, heuristic evaluation ux tools">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+    /* ── TOKENS ─────────────────────────────────────────── */
+    :root {
+        --bg:        #0d0f12;
+        --surface:   #13161b;
+        --border:    #1f242d;
+        --border-hi: #2e3540;
+        --accent:    #00e5c3;
+        --accent-2:  #5b6af5;
+        --text:      #e4e8ef;
+        --muted:     #6b7585;
+        --danger:    #ff5f57;
+
+        --font-display: 'DM Serif Display', Georgia, serif;
+        --font-body:    'DM Sans', sans-serif;
+        --font-mono:    'DM Mono', monospace;
+
+        --radius:    10px;
+        --radius-lg: 18px;
+        --transition: 220ms cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.7;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND GRID ────────────────────────────────── */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image:
+            linear-gradient(var(--border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 48px 48px;
+        opacity: .4;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .wrapper {
+        position: relative;
+        z-index: 1;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+        padding: 72px 0 56px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: rgba(0,229,195,.07);
+        border: 1px solid rgba(0,229,195,.2);
+        border-radius: 100px;
+        padding: 5px 14px;
+        width: fit-content;
+    }
+
+    .header-badge::before {
+        content: '';
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: .4; transform: scale(.8); }
+    }
+
+    header h1 {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 5vw, 3.4rem);
+        font-weight: 400;
+        line-height: 1.15;
+        letter-spacing: -.02em;
+        color: #fff;
+        max-width: 760px;
+    }
+
+    header h1 em {
+        font-style: italic;
+        color: var(--accent);
+    }
+
+    header > .wrapper > p,
+    .header-inner > p {
+        font-size: 1.05rem;
+        color: var(--muted);
+        max-width: 580px;
+        font-weight: 300;
+    }
+
+    /* ── SECTIONS ───────────────────────────────────────── */
+    section {
+        padding: 56px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    section:last-of-type { border-bottom: none; }
+
+    section h2 {
+        font-family: var(--font-display);
+        font-size: 1.65rem;
+        font-weight: 400;
+        color: #fff;
+        margin-bottom: 24px;
+        letter-spacing: -.01em;
+    }
+
+    section p {
+        color: var(--muted);
+        max-width: 640px;
+        margin-bottom: 20px;
+    }
+
+    /* ── LISTS (why / use-cases) ────────────────────────── */
+    section ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    section ul li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: var(--text);
+        font-size: .95rem;
+    }
+
+    section ul li::before {
+        content: '→';
+        color: var(--accent);
+        font-family: var(--font-mono);
+        font-size: .8rem;
+        margin-top: 3px;
+        flex-shrink: 0;
+    }
+
+    /* ── TOOLS GRID ─────────────────────────────────────── */
+    .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        margin-top: 8px;
+    }
+
+    article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 28px 28px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    article::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        opacity: 0;
+        transition: opacity var(--transition);
+    }
+
+    article:hover {
+        border-color: var(--border-hi);
+        transform: translateY(-3px);
+        box-shadow: 0 16px 48px rgba(0,0,0,.4);
+    }
+
+    article:hover::before { opacity: 1; }
+
+    .tool-icon {
+        width: 36px; height: 36px;
+        border-radius: 8px;
+        background: rgba(0,229,195,.08);
+        border: 1px solid rgba(0,229,195,.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    article h3 {
+        font-family: var(--font-body);
+        font-size: 1rem;
+        font-weight: 500;
+        color: #fff;
+        line-height: 1.3;
+    }
+
+    article p {
+        font-size: .875rem;
+        color: var(--muted);
+        margin: 0;
+        flex: 1;
+    }
+
+    article a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-mono);
+        font-size: .78rem;
+        font-weight: 500;
+        letter-spacing: .04em;
+        color: var(--accent);
+        text-decoration: none;
+        margin-top: 6px;
+        transition: gap var(--transition), color var(--transition);
+    }
+
+    article a::after {
+        content: '↗';
+        font-size: .85em;
+        transition: transform var(--transition);
+    }
+
+    article a:hover { gap: 10px; }
+    article a:hover::after { transform: translate(2px, -2px); }
+
+    /* ── LONG-TAIL QUERIES (styled as tags) ─────────────── */
+    .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        list-style: none;
+        margin-top: 4px;
+    }
+
+    .tag-list li::before { display: none; }
+
+    .tag-list li {
+        font-family: var(--font-mono);
+        font-size: .78rem;
+        color: var(--muted);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        padding: 5px 14px;
+        transition: color var(--transition), border-color var(--transition);
+        cursor: default;
+    }
+
+    .tag-list li:hover {
+        color: var(--text);
+        border-color: var(--border-hi);
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    footer {
+        padding: 40px 0;
+        border-top: 1px solid var(--border);
+        margin-top: 8px;
+    }
+
+    footer p {
+        font-size: .875rem;
+        color: var(--muted);
+        font-weight: 300;
+    }
+
+    footer p span {
+        color: var(--accent);
+    }
+
+    /* ── FADE-IN ANIMATION ──────────────────────────────── */
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    header         { animation: fadeUp .6s ease both; }
+    section:nth-of-type(1) { animation: fadeUp .6s .1s ease both; }
+    section:nth-of-type(2) { animation: fadeUp .6s .2s ease both; }
+    section:nth-of-type(3) { animation: fadeUp .6s .3s ease both; }
+    section:nth-of-type(4) { animation: fadeUp .6s .4s ease both; }
+
+    /* ── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width: 600px) {
+        header { padding: 48px 0 40px; }
+        .tools-grid { grid-template-columns: 1fr; }
+        article { padding: 22px; }
+    }
+</style>
+```
 
 </head>
 
 <body>
 
+<div class="wrapper">
+
+```
 <header>
-    <h1>UX Audit & Usability Evaluation Tools</h1>
-    <p>
-        Evaluate and improve user experience with advanced UX audit tools. 
-        These tools help identify usability issues, apply heuristic evaluation methods, 
-        and measure UX quality to enhance product performance and user satisfaction.
-    </p>
+    <div class="header-inner">
+        <span class="header-badge">UX Audit Suite</span>
+        <h1>UX Audit &amp; <em>Usability</em><br>Evaluation Tools</h1>
+        <p>
+            Evaluate and improve user experience with advanced UX audit tools. 
+            Identify usability issues, apply heuristic evaluation methods, 
+            and measure UX quality to enhance product performance.
+        </p>
+    </div>
 </header>
 
 <section>
@@ -43,64 +381,59 @@
 </section>
 
 <section>
-    <h2>UX Audit Tools List</h2>
+    <h2>UX Audit Tools</h2>
+    <div class="tools-grid">
 
-    <article>
-        <h3>Nielsen Heuristic Checker</h3>
-        <p>
-            Evaluate interfaces using Nielsen’s usability heuristics.
-        </p>
-        <a href="/ux_audit_tools/nielsen_heuristic_checker">Open Heuristic Checker</a>
-    </article>
+        <article>
+            <div class="tool-icon">⬡</div>
+            <h3>Nielsen Heuristic Checker</h3>
+            <p>Evaluate interfaces using Nielsen's 10 usability heuristics.</p>
+            <a href="/ux_audit_tools/nielsen_heuristic_checker">Open Heuristic Checker</a>
+        </article>
 
-    <article>
-        <h3>UI Consistency Checker</h3>
-        <p>
-            Detect inconsistencies in UI components, styles, and interactions.
-        </p>
-        <a href="/ux_audit_tools/ui_consistency_checker">Open UI Consistency Tool</a>
-    </article>
+        <article>
+            <div class="tool-icon">◈</div>
+            <h3>UI Consistency Checker</h3>
+            <p>Detect inconsistencies in UI components, styles, and interactions.</p>
+            <a href="/ux_audit_tools/ui_consistency_checker">Open UI Consistency Tool</a>
+        </article>
 
-    <article>
-        <h3>UX Audit Tool</h3>
-        <p>
-            Perform a full UX audit with structured evaluation and reporting.
-        </p>
-        <a href="/ux_audit_tools/ux_audit_tool">Open UX Audit Tool</a>
-    </article>
+        <article>
+            <div class="tool-icon">◎</div>
+            <h3>UX Audit Tool</h3>
+            <p>Perform a full UX audit with structured evaluation and reporting.</p>
+            <a href="/ux_audit_tools/ux_audit_tool">Open UX Audit Tool</a>
+        </article>
 
-    <article>
-        <h3>UX Heuristic Evaluation Tool</h3>
-        <p>
-            Conduct detailed heuristic evaluations for usability analysis.
-        </p>
-        <a href="/ux_audit_tools/ux_heuristic_evaluation">Open Heuristic Evaluation Tool</a>
-    </article>
+        <article>
+            <div class="tool-icon">⬟</div>
+            <h3>UX Heuristic Evaluation Tool</h3>
+            <p>Conduct detailed heuristic evaluations for usability analysis.</p>
+            <a href="/ux_audit_tools/ux_heuristic_evaluation">Open Heuristic Evaluation Tool</a>
+        </article>
 
-    <article>
-        <h3>UX Issue Detector</h3>
-        <p>
-            Automatically detect usability issues and friction points.
-        </p>
-        <a href="/ux_audit_tools/ux_issue_detector">Open Issue Detector</a>
-    </article>
+        <article>
+            <div class="tool-icon">⚑</div>
+            <h3>UX Issue Detector</h3>
+            <p>Automatically detect usability issues and friction points.</p>
+            <a href="/ux_audit_tools/ux_issue_detector">Open Issue Detector</a>
+        </article>
 
-    <article>
-        <h3>UX Score Calculator</h3>
-        <p>
-            Calculate a usability score based on UX metrics and evaluations.
-        </p>
-        <a href="/ux_audit_tools/ux_score_calculator">Open UX Score Tool</a>
-    </article>
+        <article>
+            <div class="tool-icon">◑</div>
+            <h3>UX Score Calculator</h3>
+            <p>Calculate a usability score based on UX metrics and evaluations.</p>
+            <a href="/ux_audit_tools/ux_score_calculator">Open UX Score Tool</a>
+        </article>
 
-    <article>
-        <h3>Website UX Audit Generator</h3>
-        <p>
-            Generate complete UX audit reports for websites and applications.
-        </p>
-        <a href="/ux_audit_tools/website_ux_audit_generator">Open Audit Generator</a>
-    </article>
+        <article>
+            <div class="tool-icon">⊞</div>
+            <h3>Website UX Audit Generator</h3>
+            <p>Generate complete UX audit reports for websites and applications.</p>
+            <a href="/ux_audit_tools/website_ux_audit_generator">Open Audit Generator</a>
+        </article>
 
+    </div>
 </section>
 
 <section>
@@ -115,8 +448,8 @@
 </section>
 
 <section>
-    <h2>Long-Tail Search Queries</h2>
-    <ul>
+    <h2>Search Queries</h2>
+    <ul class="tag-list">
         <li>ux audit tools for website usability analysis</li>
         <li>nielsen heuristic evaluation checklist tool</li>
         <li>calculate ux score for user experience audit</li>
@@ -128,9 +461,13 @@
 
 <footer>
     <p>
-        Deliver better user experiences with powerful UX audit tools designed to analyze, evaluate, and optimize usability.
+        Deliver better user experiences with powerful UX audit tools — 
+        designed to <span>analyze</span>, <span>evaluate</span>, and <span>optimize</span> usability.
     </p>
 </footer>
+```
+
+</div>
 
 </body>
 </html>
