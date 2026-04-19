@@ -1,28 +1,741 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ux_heuristic_evaluation</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Heuristic Evaluation Tool – Nielsen's 10 Heuristics</title>
+<meta name="description" content="Conduct a detailed heuristic evaluation scoring each of Nielsen's 10 usability principles individually. Identify which heuristics are violated and get specific fix recommendations.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0d0f12;
+    --surface:   #13161b;
+    --surface-2: #181c23;
+    --border:    #1f242d;
+    --border-hi: #2e3540;
+    --accent:    #00e5c3;
+    --accent-2:  #5b6af5;
+    --text:      #e4e8ef;
+    --muted:     #6b7585;
+    --warning:   #f0a500;
+    --danger:    #ff5f57;
+    --success:   #00e5c3;
+
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+    --radius:    10px;
+    --radius-lg: 18px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative;
+    z-index: 2;
+    padding: 20px 24px;
+    max-width: 740px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+  }
+
+  nav a:hover { color: var(--accent); }
+  nav a::before { content: '←'; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 36px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(0,229,195,.07);
+    border: 1px solid rgba(0,229,195,.2);
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 18px;
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+  }
+
+  header h1 em { font-style: italic; color: var(--accent); }
+
+  header p {
+    color: var(--muted);
+    font-size: .95rem;
+    font-weight: 300;
+    max-width: 560px;
+  }
+
+  /* ── TOOL CARD ── */
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin: 36px 0;
+    animation: fadeUp .5s .1s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+
+  /* ── HEURISTIC ROW ── */
+  .heuristic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .heuristic-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 140px;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .heuristic-row:last-child { border-bottom: none; }
+
+  .h-number {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    text-align: center;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 0;
+    width: 28px;
+  }
+
+  .h-info { display: flex; flex-direction: column; gap: 2px; }
+
+  .h-name {
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .h-desc {
+    font-size: .75rem;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.4;
+  }
+
+  .h-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .h-input-inner { position: relative; }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 36px 9px 12px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,195,.1);
+  }
+
+  .input-unit {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .h-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .h-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width .35s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── BUTTON ── */
+  .btn-run {
+    width: 100%;
+    background: var(--accent);
+    color: #0d0f12;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 28px;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  }
+
+  .btn-run:hover {
+    background: #00ffd6;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,195,.25);
+  }
+
+  .btn-run:active { transform: translateY(0); }
+
+  /* ── RESULT ── */
+  #result { margin-top: 28px; display: none; animation: fadeUp .4s ease both; }
+  #result.visible { display: block; }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  .result-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .result-number {
+    font-family: var(--font-display);
+    font-size: 3.4rem;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -.03em;
+  }
+
+  .result-number span {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .result-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    padding: 5px 14px;
+    align-self: flex-start;
+  }
+
+  .level-excellent { color: var(--success);  background: rgba(0,229,195,.08);  border: 1px solid rgba(0,229,195,.2); }
+  .level-average   { color: var(--warning);   background: rgba(240,165,0,.08);  border: 1px solid rgba(240,165,0,.2); }
+  .level-poor      { color: var(--danger);    background: rgba(255,95,87,.08);  border: 1px solid rgba(255,95,87,.2); }
+
+  .violations-count {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .violations-count strong { color: var(--text); }
+
+  /* violation cards */
+  .violations-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .violation-card {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .violation-card.severity-high   { border-left: 3px solid var(--danger);  }
+  .violation-card.severity-medium { border-left: 3px solid var(--warning); }
+  .violation-card.severity-low    { border-left: 3px solid var(--accent);  }
+
+  .violation-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    width: 80px;
+  }
+
+  .v-number {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    color: var(--muted);
+  }
+
+  .v-score {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .v-badge {
+    font-family: var(--font-mono);
+    font-size: .6rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 2px 7px;
+    width: fit-content;
+  }
+
+  .severity-high   .v-badge { background: rgba(255,95,87,.15);  color: var(--danger);  }
+  .severity-medium .v-badge { background: rgba(240,165,0,.15);  color: var(--warning); }
+  .severity-low    .v-badge { background: rgba(0,229,195,.12);  color: var(--accent);  }
+
+  .violation-body { flex: 1; }
+
+  .v-name {
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .v-fix {
+    font-size: .8rem;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.5;
+  }
+
+  .no-issues {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,229,195,.06);
+    border: 1px solid rgba(0,229,195,.15);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: var(--accent);
+  }
+
+  .no-issues::before { content: '✓'; font-weight: 700; }
+
+  /* ── INFO ── */
+  .info-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .2s ease both;
+  }
+
+  .info-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .info-section p {
+    color: var(--muted);
+    font-size: .9rem;
+    font-weight: 300;
+    margin-bottom: 12px;
+    max-width: 600px;
+  }
+
+  .info-section ul { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  .info-section ul li {
+    display: flex;
+    gap: 10px;
+    font-size: .875rem;
+    color: var(--text);
+  }
+
+  .info-section ul li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 24px;
+    max-width: 740px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  footer p { font-size: .8rem; color: var(--muted); font-weight: 300; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 560px) {
+    .tool-card { padding: 20px; }
+    .heuristic-row { grid-template-columns: 24px 1fr; }
+    .h-input-wrap { grid-column: 1 / -1; }
+    .result-number { font-size: 2.6rem; }
+  }
+</style>
+
 </head>
 <body>
-<div class="container">
-<h2>Ux Heuristic Evaluation</h2>
 
-<label>Usability Score (0-100)</label>
-<input id="a" type="number">
+<nav class="wrapper">
+  <a href="/ux_audit_tools/">UX Audit Tools</a>
+</nav>
 
-<label>Consistency Score (0-100)</label>
-<input id="b" type="number">
+<div class="wrapper">
 
-<label>Accessibility Score (0-100)</label>
-<input id="c" type="number">
+  <header>
+    <div class="badge">Heuristic Evaluation</div>
+    <h1>UX Heuristic <em>Evaluation</em></h1>
+    <p>Score each of Nielsen's 10 usability principles individually. Pinpoint exactly which heuristics are violated and get specific fix recommendations.</p>
+  </header>
 
-<button onclick="calc()">Analyze</button>
+  <div class="tool-card">
 
-<div id="result"></div>
+```
+<div class="heuristic-list" id="heuristicList">
+  <!-- rendered by JS -->
 </div>
 
-<script src="script.js"></script>
+<button class="btn-run" onclick="calc()">Evaluate Heuristics</button>
+
+<div id="result"></div>
+```
+
+  </div>
+
+  <div class="info-section">
+    <h2>Scoring Guide</h2>
+    <p>Rate each heuristic from 0 to 10 based on how well your interface satisfies that principle.</p>
+    <ul>
+      <li>0–3 = Severe violation — High priority fix</li>
+      <li>4–6 = Minor violation — Medium priority fix</li>
+      <li>7–10 = Satisfied — Low or no action needed</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer class="wrapper">
+  <p>UX Audit Tools — UX Heuristic Evaluation Tool</p>
+</footer>
+
+<script>
+  const HEURISTICS = [
+    {
+      id: 'h1',
+      number: '01',
+      name: 'Visibility of System Status',
+      desc: 'Does the system always keep users informed about what is going on?',
+      fix: 'Add loading indicators, progress bars, and confirmation messages to every user action.',
+    },
+    {
+      id: 'h2',
+      number: '02',
+      name: 'Match Between System & Real World',
+      desc: 'Does the interface use language and concepts familiar to the user?',
+      fix: 'Replace technical jargon with plain language. Use real-world metaphors for icons and labels.',
+    },
+    {
+      id: 'h3',
+      number: '03',
+      name: 'User Control & Freedom',
+      desc: 'Can users easily undo and redo actions?',
+      fix: 'Implement undo/redo, cancel buttons, and clear exit paths from every flow.',
+    },
+    {
+      id: 'h4',
+      number: '04',
+      name: 'Consistency & Standards',
+      desc: 'Does the interface follow platform conventions consistently?',
+      fix: 'Audit all UI components for consistency. Standardize button styles, icons, and interaction patterns.',
+    },
+    {
+      id: 'h5',
+      number: '05',
+      name: 'Error Prevention',
+      desc: 'Does the design prevent problems before they occur?',
+      fix: 'Add inline validation, confirmation dialogs for destructive actions, and smart defaults.',
+    },
+    {
+      id: 'h6',
+      number: '06',
+      name: 'Recognition Over Recall',
+      desc: 'Are options and information visible rather than requiring memorization?',
+      fix: 'Surface options in context. Add tooltips, recent history, and visible affordances.',
+    },
+    {
+      id: 'h7',
+      number: '07',
+      name: 'Flexibility & Efficiency of Use',
+      desc: 'Does the interface serve both novice and expert users?',
+      fix: 'Add keyboard shortcuts, saved settings, and power-user features without cluttering the UI.',
+    },
+    {
+      id: 'h8',
+      number: '08',
+      name: 'Aesthetic & Minimalist Design',
+      desc: 'Does every element serve a purpose? Is there visual noise?',
+      fix: 'Remove decorative elements that add no value. Each screen should contain only what is needed.',
+    },
+    {
+      id: 'h9',
+      number: '09',
+      name: 'Help Users Recognize & Recover from Errors',
+      desc: 'Are error messages clear, specific, and actionable?',
+      fix: 'Rewrite error messages in plain language. Always tell the user what went wrong and how to fix it.',
+    },
+    {
+      id: 'h10',
+      number: '10',
+      name: 'Help & Documentation',
+      desc: 'Is help easy to find and focused on the user\'s task?',
+      fix: 'Add contextual help tooltips, an accessible FAQ, and inline guidance for complex tasks.',
+    },
+  ];
+
+  // ── Render input rows ──────────────────────────────────
+  const list = document.getElementById('heuristicList');
+  list.innerHTML = HEURISTICS.map(h => `
+    <div class="heuristic-row">
+      <span class="h-number">${h.number}</span>
+      <div class="h-info">
+        <span class="h-name">${h.name}</span>
+        <span class="h-desc">${h.desc}</span>
+      </div>
+      <div class="h-input-wrap">
+        <div class="h-input-inner">
+          <input
+            id="${h.id}"
+            type="number"
+            min="0" max="10"
+            placeholder="0–10"
+            oninput="updateBar('${h.id}')"
+          >
+          <span class="input-unit">/ 10</span>
+        </div>
+        <div class="h-bar"><div class="h-bar-fill" id="bar_${h.id}"></div></div>
+      </div>
+    </div>
+  `).join('');
+
+  // ── Live bars ──────────────────────────────────────────
+  function updateBar(id) {
+    const val = Math.min(Math.max(parseFloat(document.getElementById(id).value) || 0, 0), 10);
+    document.getElementById('bar_' + id).style.width = (val * 10) + '%';
+  }
+
+  // ── Severity ───────────────────────────────────────────
+  function severity(score) {
+    if (score <= 3) return 'high';
+    if (score <= 6) return 'medium';
+    return 'low';
+  }
+
+  function severityLabel(score) {
+    if (score <= 3) return 'High';
+    if (score <= 6) return 'Medium';
+    return 'Low';
+  }
+
+  // ── Main calc ──────────────────────────────────────────
+  function calc() {
+    const scores = {};
+    for (const h of HEURISTICS) {
+      const raw = parseFloat(document.getElementById(h.id).value);
+      if (isNaN(raw)) { alert('Please score all 10 heuristics before evaluating.'); return; }
+      scores[h.id] = Math.min(Math.max(raw, 0), 10);
+    }
+
+    const avg = HEURISTICS.reduce((s, h) => s + scores[h.id], 0) / HEURISTICS.length;
+    const pct = avg * 10;
+
+    let levelClass, levelLabel;
+    if (pct >= 75)      { levelClass = 'level-excellent'; levelLabel = 'Well Designed ✓'; }
+    else if (pct >= 50) { levelClass = 'level-average';   levelLabel = 'Needs Improvement ⚖️'; }
+    else                { levelClass = 'level-poor';      levelLabel = 'Multiple Violations ⚠️'; }
+
+    // Sort by score asc (worst first)
+    const sorted = HEURISTICS
+      .map(h => ({ ...h, score: scores[h.id], sev: severity(scores[h.id]) }))
+      .sort((a, b) => a.score - b.score);
+
+    const violations = sorted.filter(h => h.sev !== 'low');
+    const healthy    = sorted.filter(h => h.sev === 'low');
+
+    const violationsHTML = violations.length === 0
+      ? `<div class="no-issues">All 10 heuristics satisfied. No violations detected.</div>`
+      : `<div class="violations-grid">
+          ${violations.map(h => `
+            <div class="violation-card severity-${h.sev}">
+              <div class="violation-meta">
+                <span class="v-number">H${h.number}</span>
+                <span class="v-score">${h.score}</span>
+                <span class="v-badge">${severityLabel(h.score)}</span>
+              </div>
+              <div class="violation-body">
+                <div class="v-name">${h.name}</div>
+                <div class="v-fix">${h.fix}</div>
+              </div>
+            </div>
+          `).join('')}
+          ${healthy.length > 0 ? `
+            <div class="violation-card severity-low">
+              <div class="violation-meta">
+                <span class="v-number">✓ ${healthy.length}</span>
+                <span class="v-score" style="font-size:1.1rem;margin-top:4px">OK</span>
+                <span class="v-badge">Low</span>
+              </div>
+              <div class="violation-body">
+                <div class="v-name">Satisfied Heuristics</div>
+                <div class="v-fix">${healthy.map(h => h.name).join(' · ')}</div>
+              </div>
+            </div>
+          ` : ''}
+        </div>`;
+
+    const resultEl = document.getElementById('result');
+    resultEl.innerHTML = `
+      <div class="divider"></div>
+      <div class="result-top">
+        <div class="result-number">${pct.toFixed(1)}<span>/100</span></div>
+        <div class="result-level ${levelClass}">${levelLabel}</div>
+      </div>
+      <p class="violations-count">
+        <strong>${violations.length}</strong> violation${violations.length !== 1 ? 's' : ''} detected
+        across <strong>${HEURISTICS.length}</strong> heuristics
+      </p>
+      ${violationsHTML}
+    `;
+
+    resultEl.classList.add('visible');
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+
 </body>
 </html>
